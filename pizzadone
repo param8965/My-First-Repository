@@ -1,0 +1,228 @@
+var restify = require('restify');
+var builder = require('botbuilder');
+require('dotenv').load();
+
+// Setup Restify Server
+var server = restify.createServer();
+server.listen(process.env.port || process.env.PORT || 3456, function () {
+	console.log('%s listening to %s', server.name, server.url);
+});
+
+//Create chat connector for communicating with the Bot Framework Service
+var connector = new builder.ChatConnector({
+    appId: process.env.MICROSOFT_APP_ID,
+    appPassword: process.env.MICROSOFT_APP_PASSWORD
+});
+
+// Listen for messages from users
+server.post('/api/messages', connector.listen());
+
+var bot = new builder.UniversalBot(connector);
+var recognizer = new builder.LuisRecognizer(process.env.LUIS_MODEL_URL);
+bot.recognizer(recognizer);
+var intents = new builder.IntentDialog({ recognizers: [recognizer]});
+
+bot.dialog('/',intents);
+
+//=========================================================
+// BOT Setup
+//=========================================================
+var i=0;
+var price=0;
+var orn=0;
+intents.matches('Greeting', 'Greeting');
+bot.dialog('Greeting',[function(session){
+	var card1 = new builder.HeroCard(session)
+	.title("Welcome to Pizzadone")
+	.images([builder.CardImage.create(session,'http://www.nohopizza.com/images/pizza.jpeg')])
+	.subtitle("what would you like to have")
+	.buttons([builder.CardAction.postBack(session,"pizza", "Pizza"),builder.CardAction.postBack(session, "Meal","Meal"),builder.CardAction.postBack(session,"Coke", "Coke and icecream")]);
+	
+	var msg2 = new builder.Message(session);
+	 msg2.addAttachment(card1);
+        session.send(msg2);
+		session.endDialog();
+	
+}]);
+
+
+
+//implementation for pizza
+intents.matches('pizza','pizza')
+bot.dialog('pizza', [function (session) {
+	session.send("please select the Size");
+    var msg = new builder.Message(session);
+    msg.attachmentLayout(builder.AttachmentLayout.carousel)
+    msg.attachments([
+        new builder.HeroCard(session)
+            .title("Small")
+            .subtitle("12 iches - 6 slices")
+            .text("Price is ₹150")
+            .images([builder.CardImage.create(session, 'http://i.gzn.jp/img/2015/08/31/pizzahut-meat-crazy-pocket4/P3080279_m.jpg')])
+            .buttons([
+                builder.CardAction.postBack(session, "small", "Ok"),builder.CardAction.postBack(session,"neworder", "New Order")
+            ]),
+        new builder.HeroCard(session)
+            .title("Regular")
+            .subtitle("14 iches - 8 slices")
+            .text("Price is ₹220")
+            .images([builder.CardImage.create(session, 'http://flavorsoflife.com.ph/wp-content/uploads/2012/12/GW-Party-Size-Pizza-1024x746.jpg')])
+            .buttons([
+                builder.CardAction.postBack(session, "Regular", "OK"),builder.CardAction.postBack(session,"neworder", "New Order")
+            ]),
+			 new builder.HeroCard(session)
+            .title("Large")
+            .subtitle("16 inches - 10 slices")
+            .text("Price is ₹400")
+            .images([builder.CardImage.create(session, 'http://media.marketwire.com/attachments/201610/TN-57696_PPXXXLLaunch.jpg')])
+            .buttons([
+                builder.CardAction.postBack(session, "Large", "OK"),builder.CardAction.postBack(session,"neworder", "New Order")
+            ])
+    ]);
+    session.send(msg).endDialog();
+}]);
+
+//implementation for meals
+intents.matches('Meal','Meal')
+bot.dialog('Meal', [function (session) {
+	session.send("please select the Combo");
+    var msg3 = new builder.Message(session);
+    msg3.attachmentLayout(builder.AttachmentLayout.carousel)
+    msg3.attachments([
+        new builder.HeroCard(session)
+            .title("Veg combo")
+            .subtitle("1 Regular veg + 1 coke 250ml + 1 cookie")
+            .text("Price is ₹350")
+            .images([builder.CardImage.create(session, 'http://subwaycaterstampa.com/wp-content/uploads/2016/03/u941-r-339x290.png')])
+            .buttons([
+                builder.CardAction.postBack(session, "veg", "Ok"),builder.CardAction.postBack(session,"neworder", "New Order")
+            ]),
+		
+        new builder.HeroCard(session)
+            .title("Wings Combo")
+            .subtitle("1 Regular wings + 1 Can 250 ml + 1 chicken fries")
+            .text("Price is ₹450")
+            .images([builder.CardImage.create(session, 'http://www.meccapizzawings.com/img/pizza_combos.png')])
+            .buttons([
+                builder.CardAction.postBack(session, "Nonveg", "OK"),builder.CardAction.postBack(session,"neworder", "New Order")
+            ])
+    ]);
+    session.send(msg3).endDialog();
+	
+}]);
+
+
+
+
+
+//implementation for coke
+intents.matches('Coke','Coke')
+bot.dialog('Coke',[function(session){
+	session.send("please select the quantity");
+	var msg4 = new builder.Message(session);
+	msg4.attachmentLayout(builder.AttachmentLayout.carousel)
+	 msg4.attachments([
+	 new builder.HeroCard(session)
+            .title("250 ml mini")
+            .subtitle("")
+            .text("Price is ₹35")
+            .images([builder.CardImage.create(session, 'http://www.cbcbahamas.com/images/products/coke-classic.jpg')])
+            .buttons([
+                builder.CardAction.postBack(session, "coke1", "Ok"),builder.CardAction.postBack(session,"neworder", "New Order")
+            ]),new builder.HeroCard(session)
+            .title("1 L family pack")
+            .subtitle("")
+            .text("Price is ₹80")
+            .images([builder.CardImage.create(session, 'http://www.cbcbahamas.com/images/products/coke-classic.jpg')])
+            .buttons([
+                builder.CardAction.postBack(session, "coke2", "Ok"),builder.CardAction.postBack(session,"neworder", "New Order")
+            ])
+			
+			]);
+	session.send(msg4).endDialog();
+	
+}]);
+
+
+//implementation for new order
+intents.matches('neworder','neworder')
+bot.dialog('neworder',[function(session){
+	i++;
+	price=0;
+	session.send("What would you like to have");
+}]);
+
+//implementation for small
+intents.matches('small','small')
+bot.dialog('small',[function(session){
+	i++;
+	price=price+ 150;
+	session.send("you have succesfully added 1 small pizza");
+	session.send("If you want to exit enter exit").endDialog();
+}]);
+
+//implementation for Regular
+intents.matches('Regular','Regular')
+bot.dialog('Regular',[function(session){
+	i++;
+	price=price+ 220;
+	session.send("you have succesfully one regular pizza");
+	session.send("If you want to exit enter exit or you can even select more").endDialog();
+}]);
+
+//implementation for Large
+
+intents.matches('Large','Large')
+bot.dialog('Large',[function(session){
+	i++;
+	price=price+ 400;
+	session.send("you have succesfully added 1 Large pizza");
+	session.send("If you want to exit enter exit or you can even select more").endDialog();
+}]);
+
+//implementation for veg
+
+intents.matches('veg','veg')
+bot.dialog('veg',[function(session){
+	//i++;
+	price=price+ 350;
+	session.send("you have succesfully added 1 Veg combo");
+	session.send("If you want to exit enter exit or you can even select more").endDialog();
+}]);
+
+//implementation for Nonveg
+intents.matches('Nonveg','Nonveg')
+bot.dialog('Nonveg',[function(session){
+	i++;
+	price=price+ 450;
+	session.send("you have succesfully added 1 nonveg combo");
+	session.send("If you want to exit enter exit or you can even select more").endDialog();
+}]);
+
+//implementation for Coke1
+intents.matches('Coke1','Coke1')
+bot.dialog('Coke1',[function(session){
+	i++;
+	price=price+ 35;
+	session.send("you have succesfully added 1 Mini Coke");
+	session.send("If you want to exit enter exit or you can even select more").endDialog();
+}]);
+//implementation for Coke2
+intents.matches('Coke2','Coke2')
+bot.dialog('Coke2',[function(session){
+	i++;
+	price=price+ 80;
+	session.send("you have succesfully added 1 L Coke");
+	session.send("If you want to exit enter exit or you can even select more").endDialog();
+}]);
+
+//implementation for exit
+intents.matches('exit','exit')
+bot.dialog('exit',[function(session){
+	if(i>0){
+	session.send("your order has been succesfully placed \n "+ "total number of items on your cart is "+i+"\n your order number is "+(++orn)+"\n please pay ₹"+price);
+	}else {session.send("please select items");}
+	i=0;
+	price=0;
+	session.endDialog();
+}]);
